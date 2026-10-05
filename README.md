@@ -104,3 +104,9 @@ Aus den Modellen in `models/2026-10-05/` (ohne Sonnenflecken, Geomagnetik und GD
 
 Rückwärts-Test auf 323 Ziehungen: Modell 0,805 richtige Zahlen pro Tipp, Zufall 0,831 –
 kein Vorteil. Auswerten nach der Ziehung mit `--refresh --evaluate`.
+
+## Overfit mit 7 von 7 (06.10.2026)
+
+`models/2026-10-05-7von7/`: Modell, das alle bekannten Ziehungen auswendig kennt
+(7,00 von 7 richtigen Zahlen nach 20 Durchläufen; auf 24 ungesehenen Ziehungen 1,08, Zufall 0,83).
+Tipp für 06.10.2026: 22, 24, 25, 35, 50 / Eurozahlen 2, 9.
