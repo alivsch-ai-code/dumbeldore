@@ -603,6 +603,105 @@ def evaluate_tips():
 
 
 # ---------------------------------------------------------------------------
+RULES_START = pd.Timestamp("2022-03-25")  # 12 Eurozahlen, Dienstag + Freitag
+
+
+def _picks_matrix(scores: np.ndarray) -> np.ndarray:
+    """Je Zeile die Top-Tipps (5 aus 50, 2 aus 12) als 0/1-Matrix."""
+    P = np.zeros_like(scores, dtype="float32")
+    for r, s in enumerate(scores):
+        m, e = _pick(s)
+        P[r, [x - 1 for x in m]] = 1
+        P[r, [MAIN_MAX + x - 1 for x in e]] = 1
+    return P
+
+
+def _perm_test(P: np.ndarray, T: np.ndarray, n_perm: int, rng):
+    """Permutationstest: Passen die Tipps zu IHRER Ziehung besser als zu
+    vertauschten Ziehungen? (fängt auch ab, dass ein Modell immer dieselben
+    beliebten Zahlen tippt)"""
+    n = len(P)
+    H = P @ T.T                      # H[i, j] = Treffer von Tipp i gegen Ziehung j
+    obs = float(np.trace(H) / n)
+    idx = np.arange(n)
+    null = np.array([H[idx, rng.permutation(n)].mean() for _ in range(n_perm)])
+    p = (1 + int((null >= obs).sum())) / (n_perm + 1)
+    return obs, float(null.mean()), p
+
+
+def backtest(initial: int = 150, step: int = 20, n_perm: int = 5000):
+    """Rückwärts-Test (Walk-Forward): Das Modell wird nur mit Ziehungen VOR
+    dem getesteten Block trainiert, alle `step` Ziehungen neu, und auf den
+    folgenden Ziehungen geprüft. Merkmale: Ziehungshistorie, Kalender,
+    Astronomie, Weltraumwetter (GDELT reicht nicht so weit zurück)."""
+    import tensorflow as tf
+
+    full = load_all_draws()
+    full = full[full["date"] >= RULES_START].reset_index(drop=True)
+    n = len(full)
+    if n < initial + step:
+        sys.exit("Zu wenige Ziehungen für den Rückwärts-Test.")
+    print(f"Rückwärts-Test auf {n - initial} Ziehungen "
+          f"(ab {full['date'][initial].date()}), Training wächst mit; "
+          f"nur Ziehungen seit {RULES_START.date()} (gleiche Regeln).")
+    L = multi_hot_matrix(full)
+
+    dates = full["date"]
+    ctx = pd.concat([calendar_features(dates), astro_features(dates),
+                     space_features(dates, load_space_weather())], axis=1)
+    ctx = ctx.loc[:, ctx.notna().mean() >= 0.8].fillna(ctx.mean())
+    hist = np.stack([history_features(L, i) for i in range(n)])
+    freq_sl = slice(WINDOW * N_OUT, WINDOW * N_OUT + N_OUT)
+    gap_sl = slice(WINDOW * N_OUT + N_OUT, WINDOW * N_OUT + 2 * N_OUT)
+
+    preds = np.zeros((n, N_OUT), dtype="float32")
+    first_row = FREQ_WIN  # frühe Zeilen haben zu wenig Historie
+    for start in range(initial, n, step):
+        end = min(start + step, n)
+        c = ctx.iloc[first_row:start]
+        mean, std = c.mean(), c.std().replace(0, 1)
+        feats = ((ctx - mean) / std).astype("float32").values
+        X = np.hstack([hist, feats]).astype("float32")
+        tr = np.arange(first_row, start)
+        cut = int(len(tr) * 0.85)
+        tf.keras.utils.set_random_seed(start)
+        model = build_model(X.shape[1])
+        model.fit(
+            X[tr[:cut]], L[tr[:cut]], validation_data=(X[tr[cut:]], L[tr[cut:]]),
+            epochs=60, batch_size=16, verbose=0,
+            callbacks=[tf.keras.callbacks.EarlyStopping(
+                patience=6, restore_best_weights=True)],
+        )
+        preds[start:end] = model.predict(X[start:end], verbose=0)
+        print(f"  Ziehungen {start}–{end - 1} getestet "
+              f"(Training mit {len(tr)} Ziehungen)")
+
+    test = slice(initial, n)
+    T = L[test]
+    rng = np.random.default_rng(0)
+    methods = {
+        "Modell": preds[test],
+        "Heiße Zahlen (Häufigkeit)": hist[test, freq_sl],
+        "Überfällige Zahlen": hist[test, gap_sl],
+    }
+    theory = MAIN_PICK * MAIN_PICK / MAIN_MAX + EURO_PICK * EURO_PICK / EURO_MAX
+    print(f"\nØ richtige Zahlen pro Tipp (Zufall theoretisch {theory:.2f}) "
+          f"auf {len(T)} Ziehungen:")
+    print(f"{'Methode':28s} {'Ø Treffer':>9s} {'Permut.-Ø':>10s} {'p-Wert':>8s}")
+    for name, scores in methods.items():
+        obs, null, p = _perm_test(_picks_matrix(scores), T, n_perm, rng)
+        print(f"{name:28s} {obs:9.3f} {null:10.3f} {p:8.3f}")
+    sim = np.array([
+        np.mean([_hits(_pick(rng.random(N_OUT)), t) for t in T])
+        for _ in range(300)
+    ])
+    print(f"{'Zufallstipps (Simulation)':28s} {sim.mean():9.3f}   "
+          f"Streuung ±{sim.std():.3f}")
+    print("\nLesehilfe: p-Wert = Wahrscheinlichkeit, dass ein so guter Wert "
+          "auch bei reinem Zufall vorkommt. Bei 3 Methoden gilt erst "
+          "p < 0,017 als auffällig (Mehrfachtest).")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -619,10 +718,13 @@ def main():
                     help="Ziel: Ø richtige Zahlen (von 7) auf bekannten Ziehungen")
     ap.add_argument("--evaluate", action="store_true",
                     help="gespeicherte Tipps mit den echten Ziehungen vergleichen")
+    ap.add_argument("--backtest", action="store_true",
+                    help="Rückwärts-Test über alle Ziehungen seit 03/2022 "
+                         "mit Permutationstest")
     args = ap.parse_args()
 
     if not (args.refresh or args.build_db or args.train or args.predict
-            or args.evaluate):
+            or args.evaluate or args.backtest):
         ap.print_help()
         return
 
@@ -648,6 +750,8 @@ def main():
         predict(args.predict, args.tickets, args.overfit)
     if args.evaluate:
         evaluate_tips()
+    if args.backtest:
+        backtest()
 
 
 if __name__ == "__main__":

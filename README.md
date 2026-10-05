@@ -58,3 +58,16 @@ python eurojackpot_experiment.py --refresh --evaluate
 
 Das vergleicht alle Tipps mit den echten Ziehungen und zeigt die Ø richtigen
 Zahlen pro Tipp (getrennt nach normal/overfit) gegen den Zufallswert 0,83.
+
+## Rückwärts-Test mit Signifikanzprüfung
+
+```bash
+python eurojackpot_experiment.py --refresh --backtest
+```
+
+Walk-Forward über alle 473 Ziehungen seit der Regeländerung im März 2022
+(12 Eurozahlen, zusätzlich Dienstag): Das Modell wird alle 20 Ziehungen nur mit
+früheren Ziehungen neu trainiert und auf den folgenden getestet (323 Testziehungen).
+Verglichen wird mit „heißen“ und „überfälligen“ Zahlen sowie Zufallstipps, mit
+Permutationstest (p-Wert). Die Weltereignisse (GDELT) fehlen hier, weil sie nicht
+so weit zurückreichen.
