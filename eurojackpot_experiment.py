@@ -38,9 +38,9 @@ META_PATH = DATA_DIR / "model_meta.json"
 LOG_CSV = DATA_DIR / "tips_log.csv"
 
 
-def model_paths(overfit: bool = False) -> tuple[Path, Path]:
-    """Normales und Overfit-Modell liegen in getrennten Dateien."""
-    s = "_overfit" if overfit else ""
+def model_paths(kind=False) -> tuple[Path, Path]:
+    """Modelle liegen getrennt: normal, overfit (True) oder eigener Name (str)."""
+    s = "" if not kind else ("_overfit" if kind is True else f"_{kind}")
     return DATA_DIR / f"model{s}.keras", DATA_DIR / f"model_meta{s}.json"
 
 MAIN_MAX, MAIN_PICK = 50, 5
@@ -531,10 +531,57 @@ def train(db: pd.DataFrame, overfit: bool = False, target_hits: float = 5.0,
     return model
 
 
-def predict(target_date: str, n_tickets: int = 3, overfit: bool = False):
+def train_holdout(db: pd.DataFrame, holdout: int = 4, min_hits: float = 2.0,
+                  max_tries: int = 300):
+    """Overfit-Modelle mit wechselndem Startwert trainieren, bis eines auf den
+    letzten `holdout` Ziehungen (nicht im Training) im Schnitt >= min_hits
+    richtige Zahlen von 7 trifft. ACHTUNG: Das ist eine Auswahl auf genau
+    diesen Ziehungen (Datenschnüffelei) und sagt nichts über neue Ziehungen."""
     import tensorflow as tf
 
-    model_path, meta_path = model_paths(overfit)
+    full = load_all_draws()
+    L = multi_hot_matrix(full)
+    cols = feature_columns(db)
+    meta = {"cols": cols, "mean": db[cols].mean().to_dict(),
+            "std": db[cols].std().replace(0, 1).to_dict()}
+    X, y = make_dataset(db, meta, full, L)
+    Xtr, ytr, Xho, yho = X[:-holdout], y[:-holdout], X[-holdout:], y[-holdout:]
+    ho_dates = [d.date() for d in db["date"].iloc[-holdout:]]
+
+    rng = np.random.default_rng(0)
+    sims = np.array([np.mean([_hits(_pick(rng.random(N_OUT)), t) for t in yho])
+                     for _ in range(5000)])
+    p_rand = float((sims >= min_hits).mean())
+    print(f"Zurückgehaltene Ziehungen: {ho_dates[0]} bis {ho_dates[-1]} "
+          f"({holdout}). Ein Zufallstipp erreicht Ø >= {min_hits} dort mit "
+          f"Wahrscheinlichkeit {p_rand:.2%} pro Versuch.")
+
+    for seed in range(1, max_tries + 1):
+        tf.keras.utils.set_random_seed(seed)
+        model = build_model(X.shape[1], overfit=True)
+        model.fit(Xtr, ytr, epochs=20, batch_size=16, verbose=0)
+        p = model.predict(Xho, verbose=0)
+        hits = [_hits(_pick(q), t) for q, t in zip(p, yho)]
+        avg = float(np.mean(hits))
+        if avg >= min_hits:
+            model_path, meta_path = model_paths("holdout")
+            model.save(model_path)
+            meta_path.write_text(json.dumps(meta))
+            print(f"Versuch {seed}: Ø {avg:.2f} von 7 auf den zurückgehaltenen "
+                  f"Ziehungen (je Ziehung {hits}) -> gespeichert: {model_path}")
+            return model
+        if seed % 25 == 0:
+            print(f"  {seed} Versuche, bester Wert bisher knapp darunter "
+                  f"(zuletzt Ø {avg:.2f})")
+    print(f"Kein Versuch erreichte Ø {min_hits} in {max_tries} Versuchen.")
+    return None
+
+
+def predict(target_date: str, n_tickets: int = 3, overfit: bool = False,
+            tag: str | None = None):
+    import tensorflow as tf
+
+    model_path, meta_path = model_paths(tag or overfit)
     if not (model_path.exists() and meta_path.exists()):
         sys.exit("Kein Modell gefunden. Erst mit --train "
                  f"{'--overfit ' if overfit else ''}trainieren.")
@@ -580,7 +627,7 @@ def predict(target_date: str, n_tickets: int = 3, overfit: bool = False):
         rows.append({
             "made_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
             "target_date": target.date().isoformat(),
-            "mode": "overfit" if overfit else "normal",
+            "mode": tag or ("overfit" if overfit else "normal"),
             "ticket": k + 1,
             **{f"n{j + 1}": v for j, v in enumerate(m)},
             **{f"e{j + 1}": v for j, v in enumerate(e)},
@@ -792,6 +839,12 @@ def main():
                          "mit Permutationstest")
     ap.add_argument("--check-sources", action="store_true",
                     help="alle Datenquellen testen und Beispielwerte zeigen")
+    ap.add_argument("--min-hits", type=float, default=None,
+                    help="Overfit-Modelle mit wechselndem Startwert trainieren, "
+                         "bis eines auf den letzten Ziehungen (nicht im Training) "
+                         "Ø >= dieser Wert von 7 trifft (Auswahl, keine Prognose)")
+    ap.add_argument("--holdout", type=int, default=4,
+                    help="Anzahl zurückgehaltener letzter Ziehungen für --min-hits")
     args = ap.parse_args()
 
     if args.check_sources:
@@ -799,7 +852,7 @@ def main():
         return
 
     if not (args.refresh or args.build_db or args.train or args.predict
-            or args.evaluate or args.backtest):
+            or args.evaluate or args.backtest or args.min_hits is not None):
         ap.print_help()
         return
 
@@ -814,15 +867,20 @@ def main():
     db = None
     if args.build_db:
         db = build_database()
-    if args.train:
+    if args.train or args.min_hits is not None:
         if db is None:
             if not DB_CSV.exists():
                 db = build_database()
             else:
                 db = pd.read_csv(DB_CSV, parse_dates=["date"])
+    if args.train:
         train(db, args.overfit, args.target_hits)
-    if args.predict:
-        predict(args.predict, args.tickets, args.overfit)
+    found = False
+    if args.min_hits is not None:
+        found = train_holdout(db, args.holdout, args.min_hits) is not None
+    if args.predict and (args.min_hits is None or found):
+        predict(args.predict, args.tickets, args.overfit,
+                tag="holdout" if args.min_hits is not None else None)
     if args.evaluate:
         evaluate_tips()
     if args.backtest:

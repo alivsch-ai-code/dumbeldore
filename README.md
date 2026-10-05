@@ -110,3 +110,14 @@ kein Vorteil. Auswerten nach der Ziehung mit `--refresh --evaluate`.
 `models/2026-10-05-7von7/`: Modell, das alle bekannten Ziehungen auswendig kennt
 (7,00 von 7 richtigen Zahlen nach 20 Durchläufen; auf 24 ungesehenen Ziehungen 1,08, Zufall 0,83).
 Tipp für 06.10.2026: 22, 24, 25, 35, 50 / Eurozahlen 2, 9.
+
+## Auswahl auf zurückgehaltenen Ziehungen (`--min-hits`)
+
+```bash
+python eurojackpot_experiment.py --min-hits 2 --holdout 4 --predict 2026-10-06
+```
+
+Trainiert Overfit-Modelle mit wechselndem Startwert ohne die letzten `--holdout`
+Ziehungen, bis eines dort im Schnitt `--min-hits` von 7 trifft. Das ist eine
+Auswahl auf genau diesen Ziehungen und sagt nichts über neue Ziehungen. Das Skript
+zeigt die Zufallswahrscheinlichkeit pro Versuch (bei 2 von 7 auf 4 Ziehungen: 0,90 %).
