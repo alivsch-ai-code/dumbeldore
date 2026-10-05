@@ -121,3 +121,9 @@ Trainiert Overfit-Modelle mit wechselndem Startwert ohne die letzten `--holdout`
 Ziehungen, bis eines dort im Schnitt `--min-hits` von 7 trifft. Das ist eine
 Auswahl auf genau diesen Ziehungen und sagt nichts über neue Ziehungen. Das Skript
 zeigt die Zufallswahrscheinlichkeit pro Versuch (bei 2 von 7 auf 4 Ziehungen: 0,90 %).
+
+## Modell mit 1,5 von 7 auf zurückgehaltenen Ziehungen
+
+`models/2026-10-05-holdout-1.5/`: Overfit-Modell (Startwert 7), trainiert ohne die letzten
+4 Ziehungen, trifft dort im Schnitt 1,5 von 7 (je Ziehung 1, 0, 3, 2). Zufall erreicht das
+mit 9,8 % pro Versuch. Tipp für 06.10.2026: 14, 27, 30, 35, 50 / Eurozahlen 4, 8.
