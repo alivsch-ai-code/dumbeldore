@@ -31,3 +31,5 @@ Falls der automatische Download der Ziehungen scheitert, lege `data/draws.csv` a
 date,n1,n2,n3,n4,n5,e1,e2
 2026-10-02,3,17,22,41,48,5,9
 ```
+
+Datum als `2026-10-02` oder `02.10.2026`. Die Datei wird auf gültige Zahlen geprüft.

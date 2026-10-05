@@ -59,7 +59,15 @@ def load_draws() -> pd.DataFrame:
     """Lädt Ziehungen aus data/draws.csv oder versucht einen Download."""
     DATA_DIR.mkdir(exist_ok=True)
     if DRAWS_CSV.exists():
-        df = pd.read_csv(DRAWS_CSV, parse_dates=["date"])
+        df = pd.read_csv(DRAWS_CSV)
+        # Datum robust lesen: 02.10.2026 (deutsch) oder 2026-10-02 (ISO)
+        first = str(df["date"].iloc[0])
+        df["date"] = pd.to_datetime(df["date"], dayfirst="." in first)
+        if not _valid_draws(df):
+            sys.exit(
+                "data/draws.csv ist ungültig: erwartet date,n1..n5 (1-50, "
+                "verschieden),e1,e2 (1-12, verschieden)."
+            )
     else:
         df = _download_draws()
         if df is None:
@@ -85,10 +93,29 @@ def _download_draws() -> pd.DataFrame | None:
             raw = raw.iloc[:, :8]
             raw.columns = cols
             raw["date"] = pd.to_datetime(raw["date"], dayfirst=True)
+            if not _valid_draws(raw):
+                print(f"Quelle {url}: Format passt nicht, verworfen.")
+                continue
             return raw
         except Exception as exc:  # noqa: BLE001
             print(f"Quelle {url} fehlgeschlagen: {exc}")
     return None
+
+
+def _valid_draws(df: pd.DataFrame) -> bool:
+    """Prüft: 5 verschiedene Zahlen 1-50 und 2 verschiedene Eurozahlen 1-12."""
+    try:
+        main = df[["n1", "n2", "n3", "n4", "n5"]].astype(int).values
+        euro = df[["e1", "e2"]].astype(int).values
+    except (KeyError, ValueError):
+        return False
+    return bool(
+        len(df) > 0
+        and main.min() >= 1 and main.max() <= MAIN_MAX
+        and euro.min() >= 1 and euro.max() <= EURO_MAX
+        and all(len(set(r)) == MAIN_PICK for r in main)
+        and all(len(set(r)) == EURO_PICK for r in euro)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -256,12 +283,16 @@ def build_model(input_dim: int):
 
 
 def train(db: pd.DataFrame):
+    import tensorflow as tf
+
     X, y, *_ = make_dataset(db)
     split = int(len(X) * 0.85)
     model = build_model(X.shape[1])
     model.fit(
         X[:split], y[:split], validation_data=(X[split:], y[split:]),
         epochs=60, batch_size=16, verbose=2,
+        callbacks=[tf.keras.callbacks.EarlyStopping(
+            patience=8, restore_best_weights=True)],
     )
     model.save(MODEL_PATH)
     print(f"Modell gespeichert: {MODEL_PATH}")
@@ -306,6 +337,12 @@ def predict(db: pd.DataFrame, target_date: str, n_tickets: int = 3):
 
     # Features für das Zieldatum berechnen
     target = pd.Timestamp(target_date)
+    if target.weekday() not in (1, 4):  # Dienstag, Freitag
+        print("Achtung: Eurojackpot wird dienstags und freitags gezogen.")
+    last = db["date"].max()
+    if (target - last).days > 4:
+        print(f"Achtung: Letzte Ziehung in der Datenbank ist vom {last.date()}; "
+              "aktualisiere data/draws.csv und --build-db für aktuellen Kontext.")
     row = pd.DataFrame({"date": [target]})
     row = row.join(planet_distances(row["date"]))
     ssn = load_sunspots()
