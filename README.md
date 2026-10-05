@@ -71,3 +71,10 @@ früheren Ziehungen neu trainiert und auf den folgenden getestet (323 Testziehun
 Verglichen wird mit „heißen“ und „überfälligen“ Zahlen sowie Zufallstipps, mit
 Permutationstest (p-Wert). Die Weltereignisse (GDELT) fehlen hier, weil sie nicht
 so weit zurückreichen.
+
+## Abgelegte Modelle
+
+`models/2026-10-05/` enthält die am 05.10.2026 trainierten Modelle (normal und
+`--overfit`), ihre Merkmals-Metadaten, die Datenbank (ohne Sonnenflecken, Geomagnetik
+und GDELT, die beim Training nicht erreichbar waren) und die Tipps für die Ziehung
+am 06.10.2026 (`tips_log.csv`). Zum Weiterverwenden die Dateien nach `data/` kopieren.

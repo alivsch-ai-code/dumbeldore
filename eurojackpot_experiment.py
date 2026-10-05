@@ -37,6 +37,12 @@ MODEL_PATH = DATA_DIR / "model.keras"
 META_PATH = DATA_DIR / "model_meta.json"
 LOG_CSV = DATA_DIR / "tips_log.csv"
 
+
+def model_paths(overfit: bool = False) -> tuple[Path, Path]:
+    """Normales und Overfit-Modell liegen in getrennten Dateien."""
+    s = "_overfit" if overfit else ""
+    return DATA_DIR / f"model{s}.keras", DATA_DIR / f"model_meta{s}.json"
+
 MAIN_MAX, MAIN_PICK = 50, 5
 EURO_MAX, EURO_PICK = 12, 2
 N_OUT = MAIN_MAX + EURO_MAX
@@ -488,9 +494,10 @@ def train(db: pd.DataFrame, overfit: bool = False, target_hits: float = 5.0,
             callbacks=[tf.keras.callbacks.EarlyStopping(
                 patience=8, restore_best_weights=True)],
         )
-    model.save(MODEL_PATH)
-    META_PATH.write_text(json.dumps(meta))
-    print(f"Modell gespeichert: {MODEL_PATH} ({len(cols)} Merkmale)")
+    model_path, meta_path = model_paths(overfit)
+    model.save(model_path)
+    meta_path.write_text(json.dumps(meta))
+    print(f"Modell gespeichert: {model_path} ({len(cols)} Merkmale)")
 
     # Ehrlicher Vergleich auf ungesehenen Testziehungen
     pred = model.predict(X[b:], verbose=0)
@@ -510,10 +517,12 @@ def train(db: pd.DataFrame, overfit: bool = False, target_hits: float = 5.0,
 def predict(target_date: str, n_tickets: int = 3, overfit: bool = False):
     import tensorflow as tf
 
-    if not (MODEL_PATH.exists() and META_PATH.exists()):
-        sys.exit("Kein Modell gefunden. Erst mit --train trainieren.")
-    model = tf.keras.models.load_model(MODEL_PATH)
-    meta = json.loads(META_PATH.read_text())
+    model_path, meta_path = model_paths(overfit)
+    if not (model_path.exists() and meta_path.exists()):
+        sys.exit("Kein Modell gefunden. Erst mit --train "
+                 f"{'--overfit ' if overfit else ''}trainieren.")
+    model = tf.keras.models.load_model(model_path)
+    meta = json.loads(meta_path.read_text())
     full = load_all_draws()
     L = multi_hot_matrix(full)
 
