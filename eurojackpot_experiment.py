@@ -401,9 +401,19 @@ def make_dataset(db: pd.DataFrame, meta: dict, full: pd.DataFrame, L: np.ndarray
     return np.array(X, dtype="float32"), np.array(y, dtype="float32")
 
 
-def build_model(input_dim: int):
+def build_model(input_dim: int, overfit: bool = False):
     import tensorflow as tf
 
+    if overfit:  # groß, ohne Dropout/Regularisierung -> darf auswendig lernen
+        m = tf.keras.Sequential([
+            tf.keras.layers.Input(shape=(input_dim,)),
+            tf.keras.layers.Dense(512, activation="relu"),
+            tf.keras.layers.Dense(512, activation="relu"),
+            tf.keras.layers.Dense(N_OUT, activation="sigmoid"),
+        ])
+        m.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
+                  loss="binary_crossentropy")
+        return m
     reg = tf.keras.regularizers.l2(1e-3)
     m = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
@@ -432,7 +442,8 @@ def _hits(picked, truth: np.ndarray) -> int:
     return int(sum(truth[n - 1] for n in m) + sum(truth[MAIN_MAX + n - 1] for n in e))
 
 
-def train(db: pd.DataFrame):
+def train(db: pd.DataFrame, overfit: bool = False, target_hits: float = 5.0,
+          max_epochs: int = 3000):
     import tensorflow as tf
 
     full = load_all_draws()
@@ -451,13 +462,31 @@ def train(db: pd.DataFrame):
 
     n = len(X)
     a, b = int(n * 0.70), int(n * 0.85)   # chronologisch: Train / Val / Test
-    model = build_model(X.shape[1])
-    model.fit(
-        X[:a], y[:a], validation_data=(X[a:b], y[a:b]),
-        epochs=80, batch_size=16, verbose=2,
-        callbacks=[tf.keras.callbacks.EarlyStopping(
-            patience=8, restore_best_weights=True)],
-    )
+    model = build_model(X.shape[1], overfit)
+    if overfit:
+        # Trainieren, bis die Zahlen der bekannten Ziehungen (Train+Val)
+        # im Schnitt >= target_hits richtig getippt werden. Die letzten 15 %
+        # bleiben ungesehen, damit man sieht, ob das etwas bringt.
+        class StopAtHits(tf.keras.callbacks.Callback):
+            def on_epoch_end(self, epoch, logs=None):
+                if (epoch + 1) % 10:
+                    return
+                p = self.model.predict(X[:b], verbose=0)
+                h = np.mean([_hits(_pick(q), t) for q, t in zip(p, y[:b])])
+                print(f"Epoche {epoch + 1}: Ø richtige Zahlen auf bekannten "
+                      f"Ziehungen {h:.2f} von 7")
+                if h >= target_hits:
+                    self.model.stop_training = True
+
+        model.fit(X[:b], y[:b], epochs=max_epochs, batch_size=16, verbose=0,
+                  callbacks=[StopAtHits()])
+    else:
+        model.fit(
+            X[:a], y[:a], validation_data=(X[a:b], y[a:b]),
+            epochs=80, batch_size=16, verbose=2,
+            callbacks=[tf.keras.callbacks.EarlyStopping(
+                patience=8, restore_best_weights=True)],
+        )
     model.save(MODEL_PATH)
     META_PATH.write_text(json.dumps(meta))
     print(f"Modell gespeichert: {MODEL_PATH} ({len(cols)} Merkmale)")
@@ -533,6 +562,11 @@ def main():
     ap.add_argument("--train", action="store_true", help="Modell trainieren")
     ap.add_argument("--predict", metavar="YYYY-MM-DD", help="Zahlen für Datum")
     ap.add_argument("--tickets", type=int, default=3)
+    ap.add_argument("--overfit", action="store_true",
+                    help="so lange trainieren, bis die bekannten Ziehungen "
+                         "passen (lernt auswendig, siehe Testvergleich)")
+    ap.add_argument("--target-hits", type=float, default=5.0,
+                    help="Ziel: Ø richtige Zahlen (von 7) auf bekannten Ziehungen")
     args = ap.parse_args()
 
     if not (args.refresh or args.build_db or args.train or args.predict):
@@ -556,7 +590,7 @@ def main():
                 db = build_database()
             else:
                 db = pd.read_csv(DB_CSV, parse_dates=["date"])
-        train(db)
+        train(db, args.overfit, args.target_hits)
     if args.predict:
         predict(args.predict, args.tickets)
 

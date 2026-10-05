@@ -37,3 +37,13 @@ date,n1,n2,n3,n4,n5,e1,e2
 ```
 
 Datum als `2026-10-02` oder `02.10.2026`. Die Datei wird auf gültige Zahlen geprüft.
+
+## Auswendig lernen (Experiment)
+
+```bash
+python eurojackpot_experiment.py --build-db --train --overfit --target-hits 6 --predict 2026-10-06
+```
+
+Trainiert ein großes Modell ohne Bremse, bis die bekannten Ziehungen im Schnitt
+`--target-hits` von 7 richtig getippt werden. Die letzten 15 % der Ziehungen
+bleiben ungesehen, damit der Testvergleich zeigt, ob das für neue Ziehungen etwas bringt.
