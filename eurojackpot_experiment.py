@@ -113,6 +113,17 @@ def load_sunspots() -> pd.Series:
 # ---------------------------------------------------------------------------
 # 3. Planetenabstände (Erde -> Planeten, Sonne, Mond) via astropy
 # ---------------------------------------------------------------------------
+# Helle Sterne (RA, Dec in Grad, ICRS)
+STARS = {
+    "sirius": (101.287, -16.716),
+    "betelgeuse": (88.793, 7.407),
+    "aldebaran": (68.980, 16.509),
+    "regulus": (152.093, 11.967),
+    "spica": (201.298, -11.161),
+    "antares": (247.352, -26.432),
+}
+
+
 def planet_distances(dates: pd.Series) -> pd.DataFrame:
     from astropy.coordinates import get_body
     from astropy.time import Time
@@ -124,6 +135,16 @@ def planet_distances(dates: pd.Series) -> pd.DataFrame:
     for b in bodies:
         coord = get_body(b, times)
         out[f"dist_{b}_au"] = coord.distance.to(u.au).value
+
+    # Sterne: ihre echten Entfernungen sind praktisch konstant, veränderlich
+    # ist ihre Winkelstellung relativ zur Sonne -> Winkelabstand als Merkmal.
+    from astropy.coordinates import SkyCoord
+
+    sun, moon = get_body("sun", times), get_body("moon", times)
+    out["moon_phase_deg"] = sun.separation(moon).deg
+    for name, (ra, dec) in STARS.items():
+        star = SkyCoord(ra=ra * u.deg, dec=dec * u.deg)
+        out[f"sep_sun_{name}_deg"] = sun.separation(star).deg
     return pd.DataFrame(out, index=dates.index)
 
 
@@ -132,25 +153,34 @@ def planet_distances(dates: pd.Series) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 def gdelt_series(mode: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.Series:
     """mode: 'timelinevol' (Volumen) oder 'timelinetone' (Stimmung)."""
-    params = {
-        "query": "sourcelang:english",
-        "mode": mode,
-        "format": "json",
-        "timelinesmooth": 0,
-        "startdatetime": start.strftime("%Y%m%d000000"),
-        "enddatetime": end.strftime("%Y%m%d235959"),
-    }
-    try:
-        r = requests.get(GDELT_URL, params=params, timeout=60)
-        r.raise_for_status()
-        data = r.json()["timeline"][0]["data"]
-        s = pd.Series(
-            {pd.to_datetime(p["date"]).normalize(): p["value"] for p in data}
-        )
-        return s.groupby(level=0).mean()
-    except Exception as exc:  # noqa: BLE001
-        print(f"GDELT {mode} nicht verfügbar ({exc}) -> 0")
+    # Die DOC-API deckt nur einen begrenzten Zeitraum ab (laut GDELT-Blog
+    # ca. 1,5 Jahre) -> in 90-Tage-Blöcken abfragen, Lücken bleiben 0.
+    parts = []
+    cur = start
+    while cur <= end:
+        chunk_end = min(cur + pd.Timedelta(days=89), end)
+        params = {
+            "query": "sourcelang:english",
+            "mode": mode,
+            "format": "json",
+            "timelinesmooth": 0,
+            "startdatetime": cur.strftime("%Y%m%d000000"),
+            "enddatetime": chunk_end.strftime("%Y%m%d235959"),
+        }
+        try:
+            r = requests.get(GDELT_URL, params=params, timeout=60)
+            r.raise_for_status()
+            data = r.json()["timeline"][0]["data"]
+            s = pd.Series(
+                {pd.to_datetime(p["date"]).normalize(): p["value"] for p in data}
+            )
+            parts.append(s.groupby(level=0).mean())
+        except Exception as exc:  # noqa: BLE001
+            print(f"GDELT {mode} {cur.date()}–{chunk_end.date()} fehlt ({exc})")
+        cur = chunk_end + pd.Timedelta(days=1)
+    if not parts:
         return pd.Series(dtype=float)
+    return pd.concat(parts).groupby(level=0).mean()
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +213,9 @@ def build_database() -> pd.DataFrame:
 FEATURE_COLS = [
     "sunspots", "dist_sun_au", "dist_moon_au", "dist_mercury_au",
     "dist_venus_au", "dist_mars_au", "dist_jupiter_au", "dist_saturn_au",
+    "moon_phase_deg", "sep_sun_sirius_deg", "sep_sun_betelgeuse_deg",
+    "sep_sun_aldebaran_deg", "sep_sun_regulus_deg", "sep_sun_spica_deg",
+    "sep_sun_antares_deg",
     "news_volume", "news_tone",
 ]
 
@@ -234,8 +267,6 @@ def train(db: pd.DataFrame):
     print(f"Modell gespeichert: {MODEL_PATH}")
 
     # Ehrlicher Vergleich: Trefferquote Modell vs. Zufall auf Testdaten
-    import tensorflow as tf  # noqa: F401
-
     pred = model.predict(X[split:], verbose=0)
     hits_model, hits_random = [], []
     rng = np.random.default_rng(0)
@@ -246,7 +277,7 @@ def train(db: pd.DataFrame):
         hits_random.append(_hits(rnd, truth))
     print(
         f"Ø richtige Zahlen im Test – Modell: {np.mean(hits_model):.2f} | "
-        f"Zufall: {np.mean(hits_random):.2f}  (erwartet ~0.7 bei Zufall)"
+        f"Zufall: {np.mean(hits_random):.2f}  (erwartet ~0.83 bei Zufall)"
     )
     return model
 

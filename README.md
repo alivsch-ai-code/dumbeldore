@@ -14,8 +14,8 @@ deshalb am Ende die Trefferquote des Modells mit zufälligen Tipps.
 |---|---|
 | Ziehungen (5 aus 50, 2 aus 12) | `data/draws.csv` (Download-Versuch oder manuell) |
 | Sonnenaktivität | SILSO Sonnenfleckenzahl (täglich) |
-| Planetenabstände (Sonne, Mond, Merkur–Saturn) | astropy |
-| Weltereignisse | GDELT (Nachrichtenvolumen und Ton pro Tag) |
+| Planetenabstände (Sonne, Mond, Merkur–Saturn), Mondphase, Winkelabstand der Sonne zu 6 hellen Sternen | astropy |
+| Weltereignisse | GDELT (Nachrichtenvolumen und Ton pro Tag, nur Näherung; die API deckt vermutlich keine vollen 2 Jahre ab, Lücken werden 0) |
 
 ## Benutzung
 
