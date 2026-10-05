@@ -1,35 +1,39 @@
 # Eurojackpot-Experiment
 
-Spielerisches Experiment: Eurojackpot-Ziehungen der letzten 2 Jahre werden mit
+Spielerisches Experiment: Eurojackpot-Ziehungen der letzten 18 Monate werden mit
 Zusatzdaten zu einer Datenbank verknüpft und mit TensorFlow angelernt, um Zahlen
 für die nächste Ziehung vorzuschlagen.
 
 **Ehrlicher Hinweis:** Ziehungen sind zufällig und unabhängig. Das Modell kann
 keine Vorhersage leisten, die besser als Zufall ist. Das Skript vergleicht
-deshalb am Ende die Trefferquote des Modells mit zufälligen Tipps.
+deshalb am Ende die Trefferquote auf ungesehenen Ziehungen mit dem Zufallswert.
 
-## Datenquellen
+## Merkmale pro Ziehung
 
-| Merkmal | Quelle |
-|---|---|
-| Ziehungen (5 aus 50, 2 aus 12) | `data/draws.csv`, Stand 02.10.2026 (Archiv [dev-baris/lottery-archive](https://github.com/dev-baris/lottery-archive), `--refresh` lädt neu) |
-| Sonnenaktivität | SILSO Sonnenfleckenzahl (täglich) |
-| Planetenabstände (Sonne, Mond, Merkur–Saturn), Mondphase, Winkelabstand der Sonne zu 6 hellen Sternen | astropy |
-| Weltereignisse | GDELT (Nachrichtenvolumen und Ton pro Tag, nur Näherung; die API deckt vermutlich keine vollen 2 Jahre ab, Lücken werden 0) |
+| Gruppe | Inhalt | Quelle |
+|---|---|---|
+| Ziehungen | letzte 4 Ziehungen, Häufigkeit jeder Zahl (20 Ziehungen), Ziehungen seit dem letzten Auftreten | `data/draws.csv`, Stand 02.10.2026 (Archiv [dev-baris/lottery-archive](https://github.com/dev-baris/lottery-archive), `--refresh` lädt neu) |
+| Weltraumwetter | Sonnenflecken (Tages- und 7-Tage-Wert), geomagnetischer Ap-Index, Radiofluss F10.7 | SILSO, GFZ Potsdam (jeweils Wert vom Vortag) |
+| Astronomie | Abstand zu Sonne, Mond, Merkur–Saturn; Stellung am Himmel; Mondphase; Winkelabstand der Sonne zu 6 hellen Sternen | astropy |
+| Weltereignisse | Anteil an der Berichterstattung und Stimmung zu Konflikt, Wirtschaft, Katastrophen, Politik, Sport (3-Tage-Mittel vor der Ziehung) | GDELT |
+| Kalender | Dienstag/Freitag, Monat und Jahrestag als Sinus/Kosinus | berechnet |
+
+Nicht verfügbare Quellen werden übersprungen, das Training läuft mit den
+übrigen Merkmalen.
 
 ## Benutzung
 
 ```bash
 pip install -r requirements.txt
-python eurojackpot_experiment.py --refresh --build-db
-python eurojackpot_experiment.py --train --predict 2026-10-06
+python eurojackpot_experiment.py --refresh --build-db --train --predict 2026-10-06
 ```
 
-Falls der automatische Download der Ziehungen scheitert, lege `data/draws.csv` an:
+Das Abrufen der GDELT-Daten dauert einige Minuten. Falls der Download der
+Ziehungen nicht klappt, `data/draws.csv` selbst anlegen:
 
 ```
 date,n1,n2,n3,n4,n5,e1,e2
-2026-10-02,3,17,22,41,48,5,9
+2026-10-02,4,6,7,17,45,7,12
 ```
 
 Datum als `2026-10-02` oder `02.10.2026`. Die Datei wird auf gültige Zahlen geprüft.
