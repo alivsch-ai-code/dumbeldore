@@ -60,6 +60,7 @@ DRAW_SOURCES = [
 ]
 SILSO_URL = "https://www.sidc.be/SILSO/DATA/SN_d_tot_V2.0.csv"
 GFZ_URL = "https://kp.gfz.de/app/files/Kp_ap_Ap_SN_F107_since_1932.txt"
+CELESTRAK_URL = "https://celestrak.org/SpaceData/SW-All.csv"  # Ausweichquelle
 GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 
 # GDELT-Themen: Name -> (Suchanfrage, auch Stimmung abfragen?)
@@ -110,7 +111,8 @@ def _download_draws() -> pd.DataFrame | None:
             raw = pd.read_csv(io.StringIO(r.text), sep=None, engine="python")
             raw = raw.iloc[:, :8]
             raw.columns = ID_COLS
-            raw["date"] = pd.to_datetime(raw["date"], dayfirst=True)
+            raw["date"] = pd.to_datetime(
+                raw["date"], dayfirst="." in str(raw["date"].iloc[0]))
             if not _valid_draws(raw):
                 print(f"Quelle {url}: Format passt nicht, verworfen.")
                 continue
@@ -189,6 +191,21 @@ def load_space_weather() -> pd.DataFrame:
         series["f107"] = df["f107obs"].where(df["f107obs"] > 0)
     except Exception as exc:  # noqa: BLE001
         print(f"Geomagnetik/F10.7 (GFZ) nicht verfügbar: {exc}")
+
+    # Ausweichquelle CelesTrak (Spalten DATE, AP_AVG, ISN, F10.7_OBS)
+    if not {"ap", "f107", "sunspots"} <= set(series):
+        try:
+            r = requests.get(CELESTRAK_URL, timeout=90)
+            r.raise_for_status()
+            cs = pd.read_csv(io.StringIO(r.text), parse_dates=["DATE"])
+            cs = cs.set_index("DATE").sort_index()
+            cs = cs[(cs.index >= pd.Timestamp.today() - pd.DateOffset(years=4))
+                    & (cs.index <= pd.Timestamp.today())]
+            series.setdefault("ap", cs["AP_AVG"].where(cs["AP_AVG"] >= 0))
+            series.setdefault("f107", cs["F10.7_OBS"].where(cs["F10.7_OBS"] > 0))
+            series.setdefault("sunspots", cs["ISN"].where(cs["ISN"] >= 0))
+        except Exception as exc:  # noqa: BLE001
+            print(f"Ausweichquelle CelesTrak nicht verfügbar: {exc}")
 
     if not series:
         return pd.DataFrame()
@@ -612,6 +629,49 @@ def evaluate_tips():
 
 
 # ---------------------------------------------------------------------------
+def check_sources():
+    """Testet alle Datenquellen und zeigt je einen Beispielwert."""
+    def run(name, fn):
+        try:
+            print(f"OK     {name}: {fn()}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"FEHLER {name}: {exc}")
+
+    def draws():
+        df = _download_draws()
+        if df is None:
+            raise RuntimeError("Download fehlgeschlagen")
+        return f"{len(df)} Ziehungen, letzte vom {df['date'].max().date()}"
+
+    def silso():
+        r = requests.get(SILSO_URL, timeout=60)
+        r.raise_for_status()
+        last = r.text.strip().splitlines()[-1]
+        return f"{len(r.text.splitlines())} Zeilen, letzte: {last}"
+
+    def space():
+        sw = load_space_weather()
+        if sw.empty:
+            raise RuntimeError("keine Daten")
+        last = sw.dropna(how="all").iloc[-1]
+        return (f"Spalten {list(sw.columns)}, letzter Tag "
+                f"{sw.dropna(how='all').index[-1].date()}: "
+                + ", ".join(f"{k}={v:.1f}" for k, v in last.items()))
+
+    def gdelt():
+        today = pd.Timestamp.today().normalize()
+        s = _gdelt_chunk("sourcelang:english", "timelinevol",
+                         today - pd.Timedelta(days=6), today)
+        if s is None or s.empty:
+            raise RuntimeError("keine Antwort")
+        return f"{len(s)} Tage, Ø Anteil {s.mean():.3f}"
+
+    run("Ziehungen (GitHub-Archiv)", draws)
+    run("Sonnenflecken (SILSO)", silso)
+    run("Weltraumwetter (GFZ, sonst CelesTrak)", space)
+    run("Weltereignisse (GDELT)", gdelt)
+
+
 RULES_START = pd.Timestamp("2022-03-25")  # 12 Eurozahlen, Dienstag + Freitag
 
 
@@ -730,7 +790,13 @@ def main():
     ap.add_argument("--backtest", action="store_true",
                     help="Rückwärts-Test über alle Ziehungen seit 03/2022 "
                          "mit Permutationstest")
+    ap.add_argument("--check-sources", action="store_true",
+                    help="alle Datenquellen testen und Beispielwerte zeigen")
     args = ap.parse_args()
+
+    if args.check_sources:
+        check_sources()
+        return
 
     if not (args.refresh or args.build_db or args.train or args.predict
             or args.evaluate or args.backtest):

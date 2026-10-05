@@ -78,3 +78,13 @@ so weit zurückreichen.
 `--overfit`), ihre Merkmals-Metadaten, die Datenbank (ohne Sonnenflecken, Geomagnetik
 und GDELT, die beim Training nicht erreichbar waren) und die Tipps für die Ziehung
 am 06.10.2026 (`tips_log.csv`). Zum Weiterverwenden die Dateien nach `data/` kopieren.
+
+## Datenquellen prüfen
+
+```bash
+python eurojackpot_experiment.py --check-sources
+```
+
+Testet Ziehungen, SILSO, GFZ (Ausweichquelle CelesTrak) und GDELT und zeigt je
+einen Beispielwert. Vor dem ersten Training laufen lassen: Was nicht erreichbar
+ist, wird beim Training übersprungen.
