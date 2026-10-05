@@ -88,3 +88,19 @@ python eurojackpot_experiment.py --check-sources
 Testet Ziehungen, SILSO, GFZ (Ausweichquelle CelesTrak) und GDELT und zeigt je
 einen Beispielwert. Vor dem ersten Training laufen lassen: Was nicht erreichbar
 ist, wird beim Training übersprungen.
+
+## Tipps für Dienstag, 06.10.2026
+
+Aus den Modellen in `models/2026-10-05/` (ohne Sonnenflecken, Geomagnetik und GDELT trainiert):
+
+| Modell | Zahlen | Eurozahlen |
+|---|---|---|
+| normal | 8, 21, 25, 40, 46 | 8, 9 |
+| normal | 8, 21, 40, 41, 46 | 9, 11 |
+| normal | 3, 8, 21, 40, 46 | 8, 11 |
+| overfit | 9, 24, 25, 41, 50 | 8, 9 |
+| overfit | 9, 24, 35, 41, 50 | 3, 9 |
+| overfit | 9, 24, 25, 41, 50 | 8, 9 |
+
+Rückwärts-Test auf 323 Ziehungen: Modell 0,805 richtige Zahlen pro Tipp, Zufall 0,831 –
+kein Vorteil. Auswerten nach der Ziehung mit `--refresh --evaluate`.
