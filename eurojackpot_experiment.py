@@ -48,7 +48,8 @@ GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 # Mögliche CSV-Quellen für Ziehungen (Format kann sich ändern, deshalb auch
 # manueller Fallback über data/draws.csv)
 DRAW_SOURCES = [
-    "https://www.lotto.de/api/stats/entities.eurojackpot/draws.csv",
+    # Öffentliches Archiv (täglich aktualisiert), Spalten: date,n1..n5,e1,e2
+    "https://raw.githubusercontent.com/dev-baris/lottery-archive/main/eu/eurojackpot/results.csv",
 ]
 
 
@@ -374,7 +375,17 @@ def main():
     ap.add_argument("--train", action="store_true", help="Modell trainieren")
     ap.add_argument("--predict", metavar="YYYY-MM-DD", help="Zahlen für Datum")
     ap.add_argument("--tickets", type=int, default=3)
+    ap.add_argument("--refresh", action="store_true",
+                    help="Ziehungen neu herunterladen (data/draws.csv ersetzen)")
     args = ap.parse_args()
+
+    if args.refresh:
+        df = _download_draws()
+        if df is None:
+            sys.exit("Download fehlgeschlagen, vorhandene data/draws.csv bleibt.")
+        DATA_DIR.mkdir(exist_ok=True)
+        df.to_csv(DRAWS_CSV, index=False)
+        print(f"data/draws.csv aktualisiert, letzte Ziehung: {df['date'].max().date()}")
 
     if not (args.build_db or args.train or args.predict):
         ap.print_help()

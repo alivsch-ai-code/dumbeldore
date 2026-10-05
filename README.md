@@ -12,7 +12,7 @@ deshalb am Ende die Trefferquote des Modells mit zufälligen Tipps.
 
 | Merkmal | Quelle |
 |---|---|
-| Ziehungen (5 aus 50, 2 aus 12) | `data/draws.csv` (Download-Versuch oder manuell) |
+| Ziehungen (5 aus 50, 2 aus 12) | `data/draws.csv`, Stand 02.10.2026 (Archiv [dev-baris/lottery-archive](https://github.com/dev-baris/lottery-archive), `--refresh` lädt neu) |
 | Sonnenaktivität | SILSO Sonnenfleckenzahl (täglich) |
 | Planetenabstände (Sonne, Mond, Merkur–Saturn), Mondphase, Winkelabstand der Sonne zu 6 hellen Sternen | astropy |
 | Weltereignisse | GDELT (Nachrichtenvolumen und Ton pro Tag, nur Näherung; die API deckt vermutlich keine vollen 2 Jahre ab, Lücken werden 0) |
@@ -21,7 +21,7 @@ deshalb am Ende die Trefferquote des Modells mit zufälligen Tipps.
 
 ```bash
 pip install -r requirements.txt
-python eurojackpot_experiment.py --build-db
+python eurojackpot_experiment.py --refresh --build-db
 python eurojackpot_experiment.py --train --predict 2026-10-06
 ```
 
