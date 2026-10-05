@@ -35,6 +35,7 @@ DRAWS_CSV = DATA_DIR / "draws.csv"
 DB_CSV = DATA_DIR / "database.csv"
 MODEL_PATH = DATA_DIR / "model.keras"
 META_PATH = DATA_DIR / "model_meta.json"
+LOG_CSV = DATA_DIR / "tips_log.csv"
 
 MAIN_MAX, MAIN_PICK = 50, 5
 EURO_MAX, EURO_PICK = 12, 2
@@ -506,7 +507,7 @@ def train(db: pd.DataFrame, overfit: bool = False, target_hits: float = 5.0,
     return model
 
 
-def predict(target_date: str, n_tickets: int = 3):
+def predict(target_date: str, n_tickets: int = 3, overfit: bool = False):
     import tensorflow as tf
 
     if not (MODEL_PATH.exists() and META_PATH.exists()):
@@ -546,10 +547,59 @@ def predict(target_date: str, n_tickets: int = 3):
 
     print(f"\nVorschläge für die Ziehung am {target.date()}:")
     rng = np.random.default_rng(int(target.strftime("%Y%m%d")))
+    rows = []
     for k in range(n_tickets):
         m, e = _pick(probs, temperature=0.0 if k == 0 else 0.02, rng=rng)
         print(f"  Tipp {k + 1}: {m}  Eurozahlen: {e}")
-    print("\nHinweis: Gewinnchance je Tipp bleibt 1 : 140.000.000 (ca.).")
+        rows.append({
+            "made_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
+            "target_date": target.date().isoformat(),
+            "mode": "overfit" if overfit else "normal",
+            "ticket": k + 1,
+            **{f"n{j + 1}": v for j, v in enumerate(m)},
+            **{f"e{j + 1}": v for j, v in enumerate(e)},
+        })
+    DATA_DIR.mkdir(exist_ok=True)
+    pd.DataFrame(rows).to_csv(LOG_CSV, mode="a", header=not LOG_CSV.exists(),
+                              index=False)
+    print(f"\nTipps gespeichert in {LOG_CSV} (Auswertung: --evaluate).")
+    print("Hinweis: Gewinnchance je Tipp bleibt 1 : 140.000.000 (ca.).")
+
+
+def evaluate_tips():
+    """Vergleicht gespeicherte Tipps mit den echten Ziehungen."""
+    if not LOG_CSV.exists():
+        sys.exit("Noch keine Tipps gespeichert (erst --predict ausführen).")
+    log = pd.read_csv(LOG_CSV, parse_dates=["target_date"])
+    full = load_all_draws().set_index("date")
+    mc, ec = ["n1", "n2", "n3", "n4", "n5"], ["e1", "e2"]
+    res = []
+    for _, r in log.iterrows():
+        if r["target_date"] not in full.index:
+            continue
+        d = full.loc[r["target_date"]]
+        hm = len(set(r[mc].astype(int)) & set(d[mc].astype(int)))
+        he = len(set(r[ec].astype(int)) & set(d[ec].astype(int)))
+        res.append({"target_date": r["target_date"].date(), "mode": r["mode"],
+                    "ticket": r["ticket"], "main": hm, "euro": he, "total": hm + he})
+    open_dates = sorted(set(log["target_date"].dt.date)
+                        - {x["target_date"] for x in res})
+    if not res:
+        print("Noch keine Ziehung zu den Tipps in den Daten "
+              "(erst --refresh nach der Ziehung).")
+    else:
+        df = pd.DataFrame(res)
+        print(df.to_string(index=False))
+        theory = MAIN_PICK * MAIN_PICK / MAIN_MAX + EURO_PICK * EURO_PICK / EURO_MAX
+        print("\nØ richtige Zahlen pro Tipp (Zufall theoretisch "
+              f"{theory:.2f}):")
+        for mode, g in df.groupby("mode"):
+            print(f"  {mode}: {g['total'].mean():.2f} aus {len(g)} Tipps "
+                  f"({g['target_date'].nunique()} Ziehungen), "
+                  f"beste Ziehung {g['total'].max()} von 7")
+    if open_dates:
+        print("\nNoch offen (Ziehung nicht in den Daten): "
+              + ", ".join(str(x) for x in open_dates))
 
 
 # ---------------------------------------------------------------------------
@@ -567,9 +617,12 @@ def main():
                          "passen (lernt auswendig, siehe Testvergleich)")
     ap.add_argument("--target-hits", type=float, default=5.0,
                     help="Ziel: Ø richtige Zahlen (von 7) auf bekannten Ziehungen")
+    ap.add_argument("--evaluate", action="store_true",
+                    help="gespeicherte Tipps mit den echten Ziehungen vergleichen")
     args = ap.parse_args()
 
-    if not (args.refresh or args.build_db or args.train or args.predict):
+    if not (args.refresh or args.build_db or args.train or args.predict
+            or args.evaluate):
         ap.print_help()
         return
 
@@ -592,7 +645,9 @@ def main():
                 db = pd.read_csv(DB_CSV, parse_dates=["date"])
         train(db, args.overfit, args.target_hits)
     if args.predict:
-        predict(args.predict, args.tickets)
+        predict(args.predict, args.tickets, args.overfit)
+    if args.evaluate:
+        evaluate_tips()
 
 
 if __name__ == "__main__":

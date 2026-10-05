@@ -47,3 +47,14 @@ python eurojackpot_experiment.py --build-db --train --overfit --target-hits 6 --
 Trainiert ein großes Modell ohne Bremse, bis die bekannten Ziehungen im Schnitt
 `--target-hits` von 7 richtig getippt werden. Die letzten 15 % der Ziehungen
 bleiben ungesehen, damit der Testvergleich zeigt, ob das für neue Ziehungen etwas bringt.
+
+## Tipps protokollieren und auswerten
+
+Jedes `--predict` speichert die Tipps in `data/tips_log.csv`. Nach der Ziehung:
+
+```bash
+python eurojackpot_experiment.py --refresh --evaluate
+```
+
+Das vergleicht alle Tipps mit den echten Ziehungen und zeigt die Ø richtigen
+Zahlen pro Tipp (getrennt nach normal/overfit) gegen den Zufallswert 0,83.
