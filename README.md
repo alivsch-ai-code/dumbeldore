@@ -160,3 +160,39 @@ höchstens eine Zahl (47 von 50 Zahlen abgedeckt), 20 verschiedene Eurozahl-Paar
 | 20 | 15, 26, 38, 43, 46 | 5, 9 |
 
 Erzeugt mit `python tips_generator.py data/draws.csv` (jeder Lauf gibt neue Tipps).
+
+## 20 Tipps mit Statistik, Mond und Sonne (17.11.2026)
+
+`tips_combined.py` multipliziert zwei Gewichte je Zahl und zieht daraus 20 Tipps:
+Statistik (heiß in den letzten 20 Ziehungen, überfällig; wie `tips_stat.py`) und die
+Wahrscheinlichkeit des neu trainierten Modells `models/2026-11-17/` (Mondphase 93°,
+Abstände und Stellungen von Sonne, Mond und Planeten, Sonnenflecken, Ap-Index, F10.7;
+ohne GDELT, das nicht erreichbar war). Testwert des Modells: 0,75 richtige Zahlen auf
+24 ungesehenen Ziehungen, Zufall 0,84.
+
+```bash
+python tips_combined.py . 2026-11-17
+```
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 14, 26, 38, 45, 46 | 7, 10 |
+| 2 | 2, 20, 26, 40, 42 | 1, 3 |
+| 3 | 2, 8, 20, 35, 48 | 2, 10 |
+| 4 | 15, 26, 29, 33, 47 | 3, 5 |
+| 5 | 27, 32, 33, 36, 41 | 9, 11 |
+| 6 | 7, 9, 27, 34, 38 | 5, 11 |
+| 7 | 13, 27, 35, 37, 41 | 5, 8 |
+| 8 | 8, 15, 21, 32, 45 | 2, 5 |
+| 9 | 4, 8, 10, 35, 49 | 3, 7 |
+| 10 | 13, 16, 24, 35, 42 | 1, 4 |
+| 11 | 3, 25, 31, 46, 50 | 2, 4 |
+| 12 | 7, 13, 28, 34, 46 | 4, 12 |
+| 13 | 5, 29, 32, 35, 42 | 3, 8 |
+| 14 | 1, 17, 32, 35, 48 | 6, 8 |
+| 15 | 8, 11, 12, 44, 50 | 2, 11 |
+| 16 | 25, 26, 33, 37, 40 | 1, 12 |
+| 17 | 11, 17, 28, 37, 43 | 1, 5 |
+| 18 | 3, 23, 33, 40, 42 | 10, 12 |
+| 19 | 3, 10, 30, 35, 42 | 1, 9 |
+| 20 | 1, 13, 29, 33, 42 | 1, 8 |
