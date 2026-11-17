@@ -196,3 +196,7 @@ python tips_combined.py . 2026-11-17
 | 18 | 3, 23, 33, 40, 42 | 10, 12 |
 | 19 | 3, 10, 30, 35, 42 | 1, 9 |
 | 20 | 1, 13, 29, 33, 42 | 1, 8 |
+
+**Gespielt am 17.11.2026** (ein Schein, 10 Tipps; Reihenfolge wie auf dem Schein, `data/tips_log.csv`):
+Tipps 1, 2, 3, 4, 20, 12, 8, 6, 11 und 5 aus der Tabelle oben. Bei Tipp 4 wurden die
+Eurozahlen 3, 6 statt 3, 5 erfasst.
