@@ -127,3 +127,36 @@ zeigt die Zufallswahrscheinlichkeit pro Versuch (bei 2 von 7 auf 4 Ziehungen: 0,
 `models/2026-10-05-holdout-1.5/`: Overfit-Modell (Startwert 7), trainiert ohne die letzten
 4 Ziehungen, trifft dort im Schnitt 1,5 von 7 (je Ziehung 1, 0, 3, 2). Zufall erreicht das
 mit 9,8 % pro Versuch. Tipp für 06.10.2026: 14, 27, 30, 35, 50 / Eurozahlen 4, 8.
+
+## 20 Tipps für Dienstag, 17.11.2026
+
+Zufallstipps mit Regeln gegen häufig gespielte Muster (das erhöht nicht die
+Gewinnchance, verringert aber das Risiko, einen Gewinn teilen zu müssen):
+mindestens 3 Zahlen über 31, höchstens eine Zahl bis 12, keine 3er-Folgen oder
+gleichmäßigen Reihen, keine schon gezogene Kombination, je zwei Tipps teilen
+höchstens eine Zahl (47 von 50 Zahlen abgedeckt), 20 verschiedene Eurozahl-Paare.
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 2, 13, 36, 41, 47 | 4, 11 |
+| 2 | 4, 20, 33, 41, 43 | 1, 6 |
+| 3 | 27, 31, 35, 40, 42 | 10, 12 |
+| 4 | 8, 32, 37, 44, 50 | 8, 11 |
+| 5 | 16, 30, 34, 39, 44 | 5, 7 |
+| 6 | 6, 16, 43, 47, 50 | 4, 7 |
+| 7 | 17, 26, 32, 40, 47 | 1, 12 |
+| 8 | 9, 25, 38, 44, 45 | 3, 10 |
+| 9 | 14, 37, 42, 46, 49 | 6, 9 |
+| 10 | 7, 31, 39, 41, 50 | 4, 10 |
+| 11 | 10, 29, 37, 41, 48 | 2, 11 |
+| 12 | 15, 22, 40, 41, 45 | 1, 3 |
+| 13 | 13, 19, 33, 46, 50 | 2, 7 |
+| 14 | 14, 24, 33, 38, 40 | 2, 5 |
+| 15 | 3, 15, 37, 39, 47 | 3, 8 |
+| 16 | 5, 18, 32, 45, 49 | 2, 9 |
+| 17 | 28, 33, 36, 48, 49 | 5, 11 |
+| 18 | 3, 21, 34, 38, 48 | 6, 12 |
+| 19 | 7, 23, 34, 36, 40 | 8, 12 |
+| 20 | 15, 26, 38, 43, 46 | 5, 9 |
+
+Erzeugt mit `python tips_generator.py data/draws.csv` (jeder Lauf gibt neue Tipps).
