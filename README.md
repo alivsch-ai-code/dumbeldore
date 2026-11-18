@@ -200,3 +200,6 @@ python tips_combined.py . 2026-11-17
 **Gespielt am 17.11.2026** (ein Schein, 10 Tipps; Reihenfolge wie auf dem Schein, `data/tips_log.csv`):
 Tipps 1, 2, 3, 4, 20, 12, 8, 6, 11 und 5 aus der Tabelle oben. Bei Tipp 4 wurden die
 Eurozahlen 3, 6 statt 3, 5 erfasst.
+
+**Ergebnis 17.11.2026:** Ziehung 1, 5, 7, 15, 19 / Eurozahlen 1, 11. Bester Tipp 1 + 1
+(Tipps 5 und 8), kein Gewinnrang. Ø 0,90 richtige Zahlen pro Tipp (Zufall 0,83).
