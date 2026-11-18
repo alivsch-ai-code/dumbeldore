@@ -203,3 +203,21 @@ Eurozahlen 3, 6 statt 3, 5 erfasst.
 
 **Ergebnis 17.11.2026:** Ziehung 1, 5, 7, 15, 19 / Eurozahlen 1, 11. Bester Tipp 1 + 1
 (Tipps 5 und 8), kein Gewinnrang. Ø 0,90 richtige Zahlen pro Tipp (Zufall 0,83).
+
+## 10 Tipps für Freitag, 20.11.2026
+
+Wie am 17.11. mit `tips_combined.py` (Statistik x Modell), Modell neu trainiert inkl.
+Ziehung vom 17.11. (`models/2026-11-20/`, Testwert 0,71, Zufall 0,85). Mondphase 128°.
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 5, 7, 23, 38, 45 | 1, 6 |
+| 2 | 18, 23, 27, 36, 37 | 1, 12 |
+| 3 | 15, 20, 23, 37, 47 | 1, 5 |
+| 4 | 13, 14, 35, 45, 50 | 4, 6 |
+| 5 | 5, 10, 15, 34, 42 | 2, 12 |
+| 6 | 5, 8, 30, 34, 44 | 9, 12 |
+| 7 | 7, 17, 27, 38, 41 | 1, 10 |
+| 8 | 8, 13, 18, 34, 43 | 1, 11 |
+| 9 | 6, 17, 21, 32, 49 | 8, 12 |
+| 10 | 25, 27, 35, 46, 48 | 6, 10 |
