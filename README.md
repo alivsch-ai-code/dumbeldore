@@ -221,3 +221,25 @@ Ziehung vom 17.11. (`models/2026-11-20/`, Testwert 0,71, Zufall 0,85). Mondphase
 | 8 | 8, 13, 18, 34, 43 | 1, 11 |
 | 9 | 6, 17, 21, 32, 49 | 8, 12 |
 | 10 | 25, 27, 35, 46, 48 | 6, 10 |
+
+## Modell mit 3 von 7 auf der Ziehung vom 17.11.2026
+
+`models/2026-11-20-holdout-3/`: Overfit-Modell, trainiert ohne die Ziehung vom 17.11.,
+trifft dort 3 von 7 (Startwert 1, gleich beim ersten Versuch; Zufall schafft das mit
+3,4 % pro Versuch). Das ist eine Auswahl auf genau dieser Ziehung und sagt nichts über
+neue Ziehungen. Da `--predict` fast gleiche Tipps liefert, zieht `tips_holdout.py`
+10 verschiedene Tipps aus den Modellwahrscheinlichkeiten (Tipp 1 = Spitzentipp).
+Zum Ausführen die Dateien als `data/model_holdout.keras` und `data/model_meta_holdout.json` ablegen.
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 7, 12, 15, 32, 40 | 5, 7 |
+| 2 | 7, 16, 33, 40, 41 | 5, 12 |
+| 3 | 7, 25, 38, 44, 45 | 5, 6 |
+| 4 | 5, 12, 32, 35, 45 | 4, 5 |
+| 5 | 15, 23, 29, 32, 35 | 4, 12 |
+| 6 | 7, 16, 23, 32, 34 | 5, 8 |
+| 7 | 7, 12, 16, 42, 45 | 2, 5 |
+| 8 | 11, 15, 29, 38, 40 | 7, 12 |
+| 9 | 7, 29, 32, 38, 42 | 1, 5 |
+| 10 | 7, 30, 35, 40, 42 | 4, 7 |
