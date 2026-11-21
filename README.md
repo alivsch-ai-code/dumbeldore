@@ -127,3 +127,123 @@ zeigt die Zufallswahrscheinlichkeit pro Versuch (bei 2 von 7 auf 4 Ziehungen: 0,
 `models/2026-10-05-holdout-1.5/`: Overfit-Modell (Startwert 7), trainiert ohne die letzten
 4 Ziehungen, trifft dort im Schnitt 1,5 von 7 (je Ziehung 1, 0, 3, 2). Zufall erreicht das
 mit 9,8 % pro Versuch. Tipp für 06.10.2026: 14, 27, 30, 35, 50 / Eurozahlen 4, 8.
+
+## 20 Tipps für Dienstag, 17.11.2026
+
+Zufallstipps mit Regeln gegen häufig gespielte Muster (das erhöht nicht die
+Gewinnchance, verringert aber das Risiko, einen Gewinn teilen zu müssen):
+mindestens 3 Zahlen über 31, höchstens eine Zahl bis 12, keine 3er-Folgen oder
+gleichmäßigen Reihen, keine schon gezogene Kombination, je zwei Tipps teilen
+höchstens eine Zahl (47 von 50 Zahlen abgedeckt), 20 verschiedene Eurozahl-Paare.
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 2, 13, 36, 41, 47 | 4, 11 |
+| 2 | 4, 20, 33, 41, 43 | 1, 6 |
+| 3 | 27, 31, 35, 40, 42 | 10, 12 |
+| 4 | 8, 32, 37, 44, 50 | 8, 11 |
+| 5 | 16, 30, 34, 39, 44 | 5, 7 |
+| 6 | 6, 16, 43, 47, 50 | 4, 7 |
+| 7 | 17, 26, 32, 40, 47 | 1, 12 |
+| 8 | 9, 25, 38, 44, 45 | 3, 10 |
+| 9 | 14, 37, 42, 46, 49 | 6, 9 |
+| 10 | 7, 31, 39, 41, 50 | 4, 10 |
+| 11 | 10, 29, 37, 41, 48 | 2, 11 |
+| 12 | 15, 22, 40, 41, 45 | 1, 3 |
+| 13 | 13, 19, 33, 46, 50 | 2, 7 |
+| 14 | 14, 24, 33, 38, 40 | 2, 5 |
+| 15 | 3, 15, 37, 39, 47 | 3, 8 |
+| 16 | 5, 18, 32, 45, 49 | 2, 9 |
+| 17 | 28, 33, 36, 48, 49 | 5, 11 |
+| 18 | 3, 21, 34, 38, 48 | 6, 12 |
+| 19 | 7, 23, 34, 36, 40 | 8, 12 |
+| 20 | 15, 26, 38, 43, 46 | 5, 9 |
+
+Erzeugt mit `python tips_generator.py data/draws.csv` (jeder Lauf gibt neue Tipps).
+
+## 20 Tipps mit Statistik, Mond und Sonne (17.11.2026)
+
+`tips_combined.py` multipliziert zwei Gewichte je Zahl und zieht daraus 20 Tipps:
+Statistik (heiß in den letzten 20 Ziehungen, überfällig; wie `tips_stat.py`) und die
+Wahrscheinlichkeit des neu trainierten Modells `models/2026-11-17/` (Mondphase 93°,
+Abstände und Stellungen von Sonne, Mond und Planeten, Sonnenflecken, Ap-Index, F10.7;
+ohne GDELT, das nicht erreichbar war). Testwert des Modells: 0,75 richtige Zahlen auf
+24 ungesehenen Ziehungen, Zufall 0,84.
+
+```bash
+python tips_combined.py . 2026-11-17
+```
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 14, 26, 38, 45, 46 | 7, 10 |
+| 2 | 2, 20, 26, 40, 42 | 1, 3 |
+| 3 | 2, 8, 20, 35, 48 | 2, 10 |
+| 4 | 15, 26, 29, 33, 47 | 3, 5 |
+| 5 | 27, 32, 33, 36, 41 | 9, 11 |
+| 6 | 7, 9, 27, 34, 38 | 5, 11 |
+| 7 | 13, 27, 35, 37, 41 | 5, 8 |
+| 8 | 8, 15, 21, 32, 45 | 2, 5 |
+| 9 | 4, 8, 10, 35, 49 | 3, 7 |
+| 10 | 13, 16, 24, 35, 42 | 1, 4 |
+| 11 | 3, 25, 31, 46, 50 | 2, 4 |
+| 12 | 7, 13, 28, 34, 46 | 4, 12 |
+| 13 | 5, 29, 32, 35, 42 | 3, 8 |
+| 14 | 1, 17, 32, 35, 48 | 6, 8 |
+| 15 | 8, 11, 12, 44, 50 | 2, 11 |
+| 16 | 25, 26, 33, 37, 40 | 1, 12 |
+| 17 | 11, 17, 28, 37, 43 | 1, 5 |
+| 18 | 3, 23, 33, 40, 42 | 10, 12 |
+| 19 | 3, 10, 30, 35, 42 | 1, 9 |
+| 20 | 1, 13, 29, 33, 42 | 1, 8 |
+
+**Gespielt am 17.11.2026** (ein Schein, 10 Tipps; Reihenfolge wie auf dem Schein, `data/tips_log.csv`):
+Tipps 1, 2, 3, 4, 20, 12, 8, 6, 11 und 5 aus der Tabelle oben. Bei Tipp 4 wurden die
+Eurozahlen 3, 6 statt 3, 5 erfasst.
+
+**Ergebnis 17.11.2026:** Ziehung 1, 5, 7, 15, 19 / Eurozahlen 1, 11. Bester Tipp 1 + 1
+(Tipps 5 und 8), kein Gewinnrang. Ø 0,90 richtige Zahlen pro Tipp (Zufall 0,83).
+
+## 10 Tipps für Freitag, 20.11.2026
+
+Wie am 17.11. mit `tips_combined.py` (Statistik x Modell), Modell neu trainiert inkl.
+Ziehung vom 17.11. (`models/2026-11-20/`, Testwert 0,71, Zufall 0,85). Mondphase 128°.
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 5, 7, 23, 38, 45 | 1, 6 |
+| 2 | 18, 23, 27, 36, 37 | 1, 12 |
+| 3 | 15, 20, 23, 37, 47 | 1, 5 |
+| 4 | 13, 14, 35, 45, 50 | 4, 6 |
+| 5 | 5, 10, 15, 34, 42 | 2, 12 |
+| 6 | 5, 8, 30, 34, 44 | 9, 12 |
+| 7 | 7, 17, 27, 38, 41 | 1, 10 |
+| 8 | 8, 13, 18, 34, 43 | 1, 11 |
+| 9 | 6, 17, 21, 32, 49 | 8, 12 |
+| 10 | 25, 27, 35, 46, 48 | 6, 10 |
+
+## Modell mit 3 von 7 auf der Ziehung vom 17.11.2026
+
+`models/2026-11-20-holdout-3/`: Overfit-Modell, trainiert ohne die Ziehung vom 17.11.,
+trifft dort 3 von 7 (Startwert 1, gleich beim ersten Versuch; Zufall schafft das mit
+3,4 % pro Versuch). Das ist eine Auswahl auf genau dieser Ziehung und sagt nichts über
+neue Ziehungen. Da `--predict` fast gleiche Tipps liefert, zieht `tips_holdout.py`
+10 verschiedene Tipps aus den Modellwahrscheinlichkeiten (Tipp 1 = Spitzentipp).
+Zum Ausführen die Dateien als `data/model_holdout.keras` und `data/model_meta_holdout.json` ablegen.
+
+| # | Zahlen | Eurozahlen |
+|---|---|---|
+| 1 | 7, 12, 15, 32, 40 | 5, 7 |
+| 2 | 7, 16, 33, 40, 41 | 5, 12 |
+| 3 | 7, 25, 38, 44, 45 | 5, 6 |
+| 4 | 5, 12, 32, 35, 45 | 4, 5 |
+| 5 | 15, 23, 29, 32, 35 | 4, 12 |
+| 6 | 7, 16, 23, 32, 34 | 5, 8 |
+| 7 | 7, 12, 16, 42, 45 | 2, 5 |
+| 8 | 11, 15, 29, 38, 40 | 7, 12 |
+| 9 | 7, 29, 32, 38, 42 | 1, 5 |
+| 10 | 7, 30, 35, 40, 42 | 4, 7 |
+
+**Ergebnis 20.11.2026:** Ziehung 15, 28, 29, 34, 35 / Eurozahlen 5, 9.
+Holdout-Satz: Tipp 5 mit 3 + 0 (Gewinnklasse 10), Ø 1,70 richtige Zahlen pro Tipp.
+Kombinierter Satz: kein Gewinnrang, Ø 0,90. Zufall 0,83.
