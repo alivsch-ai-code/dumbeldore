@@ -243,3 +243,7 @@ Zum Ausführen die Dateien als `data/model_holdout.keras` und `data/model_meta_h
 | 8 | 11, 15, 29, 38, 40 | 7, 12 |
 | 9 | 7, 29, 32, 38, 42 | 1, 5 |
 | 10 | 7, 30, 35, 40, 42 | 4, 7 |
+
+**Ergebnis 20.11.2026:** Ziehung 15, 28, 29, 34, 35 / Eurozahlen 5, 9.
+Holdout-Satz: Tipp 5 mit 3 + 0 (Gewinnklasse 10), Ø 1,70 richtige Zahlen pro Tipp.
+Kombinierter Satz: kein Gewinnrang, Ø 0,90. Zufall 0,83.
